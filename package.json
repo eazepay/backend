@@ -18,7 +18,7 @@
     "express-rate-limit": "^6.11.0",
     "morgan": "^1.10.0",
     "node-cron": "^3.0.2",
-    "node-fetch": "^3.3.2",
+    "node-fetch": "^2.7.0",
     "ussd-builder": "^1.2.5",
     "web3": "^4.1.1"
   }
