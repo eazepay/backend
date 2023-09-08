@@ -19,9 +19,7 @@ const userDetails = {
   randomQuestionAnswer: '',
   bankCode: ''
 };
-const nigerianBanks = await getBanks('nigeria');
-const ghanaianBanks = await getBanks('ghana');
-const togoBanks = await getBanks('togo');
+
 
 const secretQuestions = [
   "What's your first pet name?",
@@ -55,6 +53,7 @@ menu.startState({
 menu.state('naira', {
   run: async () => {
     userDetails.currency = 'naira';
+    const nigerianBanks = await getBanks('nigeria');
     const bankArr = nigerianBanks.map((x, i) => {
       return `${i}. ${x.name}\n`;
     });
@@ -69,6 +68,7 @@ menu.state('naira', {
 menu.state('cedis', {
   run: async () => {
     userDetails.currency = 'cedis';
+    const ghanaianBanks = await getBanks('ghana');
     const bankArr = ghanaianBanks.map((x, i) => {
       return `${i}. ${x.name}\n`;
     });
@@ -83,6 +83,7 @@ menu.state('cedis', {
 menu.state('cefa', {
   run: async () => {
     userDetails.currency = 'cefa';
+    const togoBanks =  await getBanks('togo');
     const bankArr = togoBanks.map((x, i) => {
       return `${i}. ${x.name}\n`;
     });
@@ -184,7 +185,7 @@ menu.state('randomQuestionAnswer', {
 menu.state('processTransaction', {
   run: async () => {
     //process transaction on blockchain
-    
+
    
   },
   next: {
