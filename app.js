@@ -8,6 +8,13 @@ const UssdMenu = require('ussd-builder');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const nigerianBanks = async ()=>{await getBanks('nigeria')}
+const nigerianBanksLength = nigerianBanks.length
+const togoBanks = async ()=>{await getBanks('togo')}
+const togoBanksLength = togoBanks.length
+const ghanaianBanks = async ()=>{await getBanks('ghana')}
+const ghanaianBanksLength = ghanaianBanks.length
+
 const userDetails = {
   currency: '',
   accountNumber: '',
@@ -17,7 +24,8 @@ const userDetails = {
   tokenPasscode: '',
   randomQuestion: '',
   randomQuestionAnswer: '',
-  bankCode: ''
+  bankCode: '',
+  currentIndex: 0
 };
 
 
@@ -50,48 +58,52 @@ menu.startState({
     4: 'usdt',
   },
 });
+
 menu.state('naira', {
   run: async () => {
     userDetails.currency = 'naira';
-    const nigerianBanks = await getBanks('nigeria');
-    const bankArr = nigerianBanks.map((x, i) => {
-      return `${i}. ${x.name}\n`;
-    });
+    const banksToArray = nigerianBanks.slice(userDetails.currentIndex, userDetails.currentIndex + 5)
+      const bankArr = banksToArray.map((x, i) => {
+        return `\n${i}. ${x.name}`;
+      });
+      userDetails.currentIndex += 4
     menu.con(`Please select the destination bank \n ${bankArr}`);
   },
   next: {
     // using regex to match user input to next state
-    '*\\d+': 'bank',
+    '*\\d+': `${userDetails.currentIndex < nigerianBanksLength? 'naira' : 'bank'}`,
   },
 });
 
 menu.state('cedis', {
   run: async () => {
     userDetails.currency = 'cedis';
-    const ghanaianBanks = await getBanks('ghana');
-    const bankArr = ghanaianBanks.map((x, i) => {
-      return `${i}. ${x.name}\n`;
-    });
+    const banksToArray = ghanaianBanks.slice(userDetails.currentIndex, userDetails.currentIndex + 5)
+      const bankArr = banksToArray.map((x, i) => {
+        return `\n${i}. ${x.name}`;
+      });
+      userDetails.currentIndex += 4
     menu.con(`Please select the destination bank \n ${bankArr}`);
   },
   next: {
     // using regex to match user input to next state
-    '*\\d+': 'bank',
+    '*\\d+': `${userDetails.currentIndex < ghanaianBanksLength? 'cedis' : 'bank'}`,
   },
 });
 
 menu.state('cefa', {
   run: async () => {
     userDetails.currency = 'cefa';
-    const togoBanks =  await getBanks('togo');
-    const bankArr = togoBanks.map((x, i) => {
-      return `${i}. ${x.name}\n`;
-    });
+    const banksToArray = togoBanks.slice(userDetails.currentIndex, userDetails.currentIndex + 5)
+      const bankArr = banksToArray.map((x, i) => {
+        return `\n${i}. ${x.name}`;
+      });
+      userDetails.currentIndex += 4
     menu.con(`Please select the destination bank \n ${bankArr}`);
   },
   next: {
     // using regex to match user input to next state
-    '*\\d+': 'bank',
+    '*\\d+': `${userDetails.currentIndex < ghanaianBanksLength? 'cefa' : 'bank'}`,
   },
 });
 
@@ -102,7 +114,7 @@ menu.state('bank', {
     if (userDetails.currency === 'cedis') bank = ghanaianBanks[menu.val];
     if (userDetails.currency === 'cefa') bank = togoBanks[menu.val];
     userDetails.bank = bank.name;
-    userDetails.bankCodenk = bank.code;
+    userDetails.bankCode = bank.code;
     menu.con(`Please enter the destination account number`);
   },
   next: {
