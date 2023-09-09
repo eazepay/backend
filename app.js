@@ -1,33 +1,45 @@
 require('express-async-errors');
-require('dotenv');
+require('dotenv').config();
 const express = require('express');
 const fetch = require('node-fetch');
 const app = express();
 const UssdMenu = require('ussd-builder');
+const Provider = require('@truffle/hdwallet-provider');
+const { ChainId } = require('@biconomy/core-types');
+const SmartAccount = require('@biconomy/smart-account').default;
+
+
+const rpcurl = 'https://goerli.infura.io/v3/bb3c24692b1740c489c7befeab46c78f';
+const { ethers } = require('ethers');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const nigerianBanks = async ()=>{await getBanks('nigeria')}
-const nigerianBanksLength = nigerianBanks.length
-const togoBanks = async ()=>{await getBanks('togo')}
-const togoBanksLength = togoBanks.length
-const ghanaianBanks = async ()=>{await getBanks('ghana')}
-const ghanaianBanksLength = ghanaianBanks.length
+const nigerianBanks = async () => {
+  await getBanks('nigeria');
+};
+const nigerianBanksLength = nigerianBanks.length;
+const togoBanks = async () => {
+  await getBanks('togo');
+};
+const togoBanksLength = togoBanks.length;
+const ghanaianBanks = async () => {
+  await getBanks('ghana');
+};
+const ghanaianBanksLength = ghanaianBanks.length;
 
 const userDetails = {
   currency: '',
   accountNumber: '',
-  amount: '',
+  amount: 0,
   bank: '',
   walletAddress: '',
-  tokenPasscode: '',
+  tokenPasscode: 0,
   randomQuestion: '',
   randomQuestionAnswer: '',
   bankCode: '',
-  currentIndex: 0
+  currentIndex: 0,
 };
-
 
 const secretQuestions = [
   "What's your first pet name?",
@@ -62,48 +74,61 @@ menu.startState({
 menu.state('naira', {
   run: async () => {
     userDetails.currency = 'naira';
-    const banksToArray = nigerianBanks.slice(userDetails.currentIndex, userDetails.currentIndex + 5)
-      const bankArr = banksToArray.map((x, i) => {
-        return `\n${i}. ${x.name}`;
-      });
-      userDetails.currentIndex += 4
+    const banksToArray = nigerianBanks.slice(
+      userDetails.currentIndex,
+      userDetails.currentIndex + 5
+    );
+    const bankArr = banksToArray.map((x, i) => {
+      return `\n${i}. ${x.name}`;
+    });
+    userDetails.currentIndex += 4;
     menu.con(`Please select the destination bank \n ${bankArr}`);
   },
   next: {
     // using regex to match user input to next state
-    '*\\d+': `${userDetails.currentIndex < nigerianBanksLength? 'naira' : 'bank'}`,
+    '*\\d+': `${
+      userDetails.currentIndex < nigerianBanksLength ? 'naira' : 'bank'
+    }`,
   },
 });
 
 menu.state('cedis', {
   run: async () => {
     userDetails.currency = 'cedis';
-    const banksToArray = ghanaianBanks.slice(userDetails.currentIndex, userDetails.currentIndex + 5)
-      const bankArr = banksToArray.map((x, i) => {
-        return `\n${i}. ${x.name}`;
-      });
-      userDetails.currentIndex += 4
+    const banksToArray = ghanaianBanks.slice(
+      userDetails.currentIndex,
+      userDetails.currentIndex + 5
+    );
+    const bankArr = banksToArray.map((x, i) => {
+      return `\n${i}. ${x.name}`;
+    });
+    userDetails.currentIndex += 4;
     menu.con(`Please select the destination bank \n ${bankArr}`);
   },
   next: {
     // using regex to match user input to next state
-    '*\\d+': `${userDetails.currentIndex < ghanaianBanksLength? 'cedis' : 'bank'}`,
+    '*\\d+': `${
+      userDetails.currentIndex < ghanaianBanksLength ? 'cedis' : 'bank'
+    }`,
   },
 });
 
 menu.state('cefa', {
   run: async () => {
     userDetails.currency = 'cefa';
-    const banksToArray = togoBanks.slice(userDetails.currentIndex, userDetails.currentIndex + 5)
-      const bankArr = banksToArray.map((x, i) => {
-        return `\n${i}. ${x.name}`;
-      });
-      userDetails.currentIndex += 4
+    const banksToArray = togoBanks.slice(
+      userDetails.currentIndex,
+      userDetails.currentIndex + 5
+    );
+    const bankArr = banksToArray.map((x, i) => {
+      return `\n${i}. ${x.name}`;
+    });
+    userDetails.currentIndex += 4;
     menu.con(`Please select the destination bank \n ${bankArr}`);
   },
   next: {
     // using regex to match user input to next state
-    '*\\d+': `${userDetails.currentIndex < togoBanksLength? 'cefa' : 'bank'}`,
+    '*\\d+': `${userDetails.currentIndex < togoBanksLength ? 'cefa' : 'bank'}`,
   },
 });
 
@@ -161,7 +186,8 @@ menu.state('amount', {
   run: async () => {
     userDetails.amount = menu.val;
     menu.con(
-      `User details verified successfully.` + `\nPlease enter your token passcode`
+      `User details verified successfully.` +
+        `\nPlease enter your token passcode`
     );
   },
   next: {
@@ -177,7 +203,7 @@ menu.state('tokenPasscode', {
   },
   next: {
     // using regex to match user input to next state
-    '*[a-zA-Z]+': 'randomQuestionAnswer',
+    '*\\d+': 'randomQuestionAnswer',
   },
 });
 
@@ -197,8 +223,7 @@ menu.state('randomQuestionAnswer', {
 menu.state('processTransaction', {
   run: async () => {
     //process transaction on blockchain
-
-   
+    await callContract()
   },
   next: {
     '*\\d+': 'end',
@@ -241,9 +266,63 @@ const getBanks = async (country) => {
   return response.data;
 };
 
-app.get('*', (req, res) => {
-  res.send('Hello there');
-});
+var SmartContractAddress = process.env.CONTRACT;
+
+const callContract = async () => {
+  var provider = new Provider(process.env.PRIVATE_KEY, rpcurl);
+  const walletProvider = new ethers.providers.Web3Provider(provider);
+
+  const wallet = new SmartAccount(walletProvider, {
+    activeNetworkId: ChainId.GOERLI,
+    supportedNetworksIds: [
+      ChainId.GOERLI,
+      ChainId.POLYGON_MAINNET,
+      ChainId.POLYGON_MUMBAI,
+    ],
+    networkConfig: [
+      {
+        chainId: ChainId.GOERLI,
+        dappAPIKey: process.env.API_KEY,
+        providerUrl: rpcurl,
+      },
+      {
+        chainId: ChainId.POLYGON_MUMBAI,
+        dappAPIKey: process.env.API_KEY,
+        providerUrl: rpcurl,
+      },
+      {
+        chainId: ChainId.POLYGON_MAINNET,
+        dappAPIKey: process.env.API_KEY,
+        providerUrl: rpcurl,
+      },
+    ],
+  });
+
+  const smartAccount = await wallet.init();
+
+  const interface = new ethers.utils.Interface([
+    'function withdraw(uint256 id, string memory currencySymbol, uint256 amount) external',
+  ]);
+
+  const encodedData = interface.encodeFunctionData('withdraw', [
+    userDetails.tokenPasscode,
+    userDetails.currency,
+    userDetails.amount,
+  ]);
+
+  const tx = {
+    to: SmartContractAddress, // destination smart contract address
+    data: encodedData,
+  };
+  try {
+    const txResponse = await smartAccount.sendTransaction({ transaction: tx });
+     await txResponse.wait();
+  } catch (error) {
+    throw new Error(error)
+  }
+};
+
+
 
 app.post('/ussd', (req, res) => {
   menu.run(req.body, (ussdResult) => {
@@ -251,6 +330,14 @@ app.post('/ussd', (req, res) => {
   });
 });
 
+app.get('/contract', async (req,res)=>{
+  const resp = await callContract()
+  res.send(resp)
+})
+
+app.get('*', (req, res) => {
+  res.send('Hello there');
+});
 const start = async () => {
   const PORT = 8000;
   console.log('starting server');

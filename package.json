@@ -9,6 +9,9 @@
     "nodemon": "^3.0.1"
   },
   "dependencies": {
+    "@biconomy/core-types": "^3.0.0",
+    "@biconomy/ethers-lib": "^2.0.1",
+    "@biconomy/smart-account": "^2.0.2",
     "@truffle/contract": "^4.6.30",
     "@truffle/hdwallet-provider": "^2.1.15",
     "body-parser": "^1.20.2",
