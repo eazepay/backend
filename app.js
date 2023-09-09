@@ -252,10 +252,14 @@ menu.state('processTransaction', {
   run: async () => {
     //process transaction on blockchain
     // await callContract();
-    console.log('yesss');
-  },
-  next: {
-    '*\\d+': 'end',
+    setTimeout(()=>{
+      console.log('yess')
+    },1000)
+    menu.end(
+      `Awesome! Your payment to ${
+        userDetails.accountNumber || userDetails.walletAddress
+      } was successful`
+    );
   },
 });
 
