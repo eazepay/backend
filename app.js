@@ -215,7 +215,7 @@ menu.state('amount', {
     userDetails.amount = menu.val;
     let account_name
     if (userDetails.accountNumber){
-       account_name = verifyUser(userDetails.accountNumber, userDetails.bankCode)
+       account_name = await verifyUser(userDetails.accountNumber, userDetails.bankCode)
     }
     menu.con(
       `User details verified successfully. ${account_name? `Transfer recipient is ${account_name}`: ''}` +
