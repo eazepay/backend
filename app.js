@@ -161,7 +161,7 @@ menu.state('amount', {
   run: async () => {
     userDetails.amount = menu.val;
     menu.con(
-      `User details verified successfully` + `Please enter your token passcode`
+      `User details verified successfully.` + `\nPlease enter your token passcode`
     );
   },
   next: {
