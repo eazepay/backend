@@ -213,8 +213,12 @@ menu.state('usdt.address', {
 menu.state('amount', {
   run: async () => {
     userDetails.amount = menu.val;
+    let account_name
+    if (userDetails.accountNumber){
+       account_name = verifyUser(userDetails.accountNumber, userDetails.bankCode)
+    }
     menu.con(
-      `User details verified successfully.` +
+      `User details verified successfully. ${account_name? `Transfer recipient is ${account_name}`: ''}` +
         `\nPlease enter your token passcode`
     );
   },
@@ -251,10 +255,10 @@ menu.state('randomQuestionAnswer', {
 menu.state('processTransaction', {
   run: async () => {
     //process transaction on blockchain
-    // await callContract();
-    setTimeout(()=>{
-      console.log('yess')
-    },1000)
+    await callContract();
+    if(userDetails.accountNumber){
+      //transfer payment via paystack
+    }
     menu.end(
       `Awesome! Your payment to ${
         userDetails.accountNumber || userDetails.walletAddress
@@ -284,6 +288,23 @@ menu.state('quit', {
     menu.end('Goodbye :)');
   },
 });
+
+const verifyUser = async(account_number, bank_code)=>{
+    const config = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
+    };
+    const url = `https://api.paystack.co/bank/resolve?account_number=${account_number}&bank_code=${bank_code}`;
+    const res = await fetch(url, {
+      method: 'post',
+      headers: config
+    });
+    const response = await res.json();
+    if (response.status === false) {
+      throwBadRequest(response.message);
+    }
+    return response.data.account_name;
+  }
 
 var SmartContractAddress = process.env.CONTRACT;
 
@@ -349,7 +370,7 @@ app.post('/ussd', (req, res) => {
 
 app.get('/contract', async (req, res) => {
   try {
-    const resp = await callContract();
+    const resp = await verifyUser();
     res.send(resp);
   } catch (error) {
     throw new Error(error);
