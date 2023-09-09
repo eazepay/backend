@@ -236,7 +236,7 @@ menu.state('tokenPasscode', {
   },
   next: {
     // using regex to match user input to next state
-    '*\\d+': 'randomQuestionAnswer',
+    '*[a-zA-Z]+': 'randomQuestionAnswer',
   },
 });
 
@@ -347,22 +347,22 @@ app.post('/ussd', (req, res) => {
   });
 });
 
-app.get('/contract', async (req, res) => {
-  const resp = [];
-  await getNigerianBanks();
-  while (userDetails.currentIndex < nigerianBanksLength) {
-    const banksToArray = nigerianBanks.slice(
-      userDetails.currentIndex,
-      userDetails.currentIndex + 5
-    );
-    const bankArr = banksToArray.map((x, i) => {
-      return `\n${i}. ${x.name}`;
-    });
-    resp.push(bankArr);
-    userDetails.currentIndex += 4;
-  }
-  res.send(resp);
-});
+// app.get('/contract', async (req, res) => {
+//   const resp = [];
+//   await getNigerianBanks();
+//   while (userDetails.currentIndex < nigerianBanksLength) {
+//     const banksToArray = nigerianBanks.slice(
+//       userDetails.currentIndex,
+//       userDetails.currentIndex + 5
+//     );
+//     const bankArr = banksToArray.map((x, i) => {
+//       return `\n${i}. ${x.name}`;
+//     });
+//     resp.push(bankArr);
+//     userDetails.currentIndex += 4;
+//   }
+//   res.send(resp);
+// });
 
 app.get('*', (req, res) => {
   res.send('Hello there');
