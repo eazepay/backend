@@ -103,7 +103,7 @@ menu.state('cefa', {
   },
   next: {
     // using regex to match user input to next state
-    '*\\d+': `${userDetails.currentIndex < ghanaianBanksLength? 'cefa' : 'bank'}`,
+    '*\\d+': `${userDetails.currentIndex < togoBanksLength? 'cefa' : 'bank'}`,
   },
 });
 
@@ -173,7 +173,7 @@ menu.state('amount', {
 menu.state('tokenPasscode', {
   run: async () => {
     userDetails.tokenPasscode = menu.val;
-    menu.con(`${getRandomQuestion}`);
+    menu.con(`${getRandomQuestion()}`);
   },
   next: {
     // using regex to match user input to next state
