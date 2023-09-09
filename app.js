@@ -8,25 +8,55 @@ const Provider = require('@truffle/hdwallet-provider');
 const { ChainId } = require('@biconomy/core-types');
 const SmartAccount = require('@biconomy/smart-account').default;
 
-
 const rpcurl = 'https://goerli.infura.io/v3/bb3c24692b1740c489c7befeab46c78f';
 const { ethers } = require('ethers');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const nigerianBanks = async () => {
-  await getBanks('nigeria');
+const getBanks = async (country) => {
+  const resp = await fetch(`https://api.paystack.co/bank?country=${country}`, {
+    methods: 'post',
+    headers: {
+      Authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
+    },
+  });
+  const response = await resp.json();
+  if (response.status === false) {
+    throw new Error(response.message);
+  }
+  return response.data;
 };
-const nigerianBanksLength = nigerianBanks.length;
-const togoBanks = async () => {
-  await getBanks('togo');
+
+let nigerianBanksLength;
+let nigerianBanks;
+const getNigerianBanks = async () => {
+  banks = await getBanks('nigeria');
+  nigerianBanks = banks;
+  nigerianBanksLength = banks.length;
+
+  return banks;
 };
-const togoBanksLength = togoBanks.length;
-const ghanaianBanks = async () => {
-  await getBanks('ghana');
+
+let togoBanks
+let togoBanksLength
+const getTogoBanks = async () => {
+  banks = await getBanks('togo');
+  togoBanks = banks;
+  togoBanksLength = banks.length;
+
 };
-const ghanaianBanksLength = ghanaianBanks.length;
+
+
+let ghanaianBanksLength
+let ghanaianBanks
+const getGhanaianBanks = async () => {
+  banks = await getBanks('ghana');
+  ghanaianBanks = banks;
+  ghanaianBanksLength = banks.length;
+
+};
+
 
 const userDetails = {
   currency: '',
@@ -73,6 +103,7 @@ menu.startState({
 
 menu.state('naira', {
   run: async () => {
+    await getNigerianBanks()
     userDetails.currency = 'naira';
     const banksToArray = nigerianBanks.slice(
       userDetails.currentIndex,
@@ -94,6 +125,7 @@ menu.state('naira', {
 
 menu.state('cedis', {
   run: async () => {
+    await getGhanaianBanks()
     userDetails.currency = 'cedis';
     const banksToArray = ghanaianBanks.slice(
       userDetails.currentIndex,
@@ -115,6 +147,7 @@ menu.state('cedis', {
 
 menu.state('cefa', {
   run: async () => {
+    await getTogoBanks()
     userDetails.currency = 'cefa';
     const banksToArray = togoBanks.slice(
       userDetails.currentIndex,
@@ -223,7 +256,7 @@ menu.state('randomQuestionAnswer', {
 menu.state('processTransaction', {
   run: async () => {
     //process transaction on blockchain
-    await callContract()
+    await callContract();
   },
   next: {
     '*\\d+': 'end',
@@ -251,20 +284,6 @@ menu.state('quit', {
     menu.end('Goodbye :)');
   },
 });
-
-const getBanks = async (country) => {
-  const resp = await fetch(`https://api.paystack.co/bank?country=${country}`, {
-    methods: 'post',
-    headers: {
-      Authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
-    },
-  });
-  const response = await resp.json();
-  if (response.status === false) {
-    throw new Error(response.message);
-  }
-  return response.data;
-};
 
 var SmartContractAddress = process.env.CONTRACT;
 
@@ -316,13 +335,11 @@ const callContract = async () => {
   };
   try {
     const txResponse = await smartAccount.sendTransaction({ transaction: tx });
-     await txResponse.wait();
+    await txResponse.wait();
   } catch (error) {
-    throw new Error(error)
+    throw new Error(error);
   }
 };
-
-
 
 app.post('/ussd', (req, res) => {
   menu.run(req.body, (ussdResult) => {
@@ -330,10 +347,22 @@ app.post('/ussd', (req, res) => {
   });
 });
 
-app.get('/contract', async (req,res)=>{
-  const resp = await callContract()
-  res.send(resp)
-})
+app.get('/contract', async (req, res) => {
+  const resp = [];
+  await getNigerianBanks();
+  while (userDetails.currentIndex < nigerianBanksLength) {
+    const banksToArray = nigerianBanks.slice(
+      userDetails.currentIndex,
+      userDetails.currentIndex + 5
+    );
+    const bankArr = banksToArray.map((x, i) => {
+      return `\n${i}. ${x.name}`;
+    });
+    resp.push(bankArr);
+    userDetails.currentIndex += 4;
+  }
+  res.send(resp);
+});
 
 app.get('*', (req, res) => {
   res.send('Hello there');
