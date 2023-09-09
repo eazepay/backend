@@ -302,7 +302,7 @@ const verifyUser = async(account_number, bank_code)=>{
     const response = await res.json();
     console.log('response', response)
     if (response.status === false) {
-      throw new Error(response.message);
+      return ''
     }
     return response.data.account_name;
   }
