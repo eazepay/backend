@@ -215,7 +215,7 @@ menu.state('amount', {
     userDetails.amount = menu.val;
     let account_name
     if (userDetails.accountNumber){
-       account_name = await verifyUser(userDetails.accountNumber, userDetails.bankCode)
+       account_name = await verifyUser(userDetails.accountNumber.toString(), userDetails.bankCode.toString())
     }
     menu.con(
       `User details verified successfully. ${account_name? `Transfer recipient is ${account_name}`: ''}` +
@@ -296,12 +296,13 @@ const verifyUser = async(account_number, bank_code)=>{
     };
     const url = `https://api.paystack.co/bank/resolve?account_number=${account_number}&bank_code=${bank_code}`;
     const res = await fetch(url, {
-      method: 'post',
+      method: 'get',
       headers: config
     });
     const response = await res.json();
+    console.log('response', response)
     if (response.status === false) {
-      throwBadRequest(response.message);
+      throw new Error(response.message);
     }
     return response.data.account_name;
   }
@@ -370,7 +371,8 @@ app.post('/ussd', (req, res) => {
 
 app.get('/contract', async (req, res) => {
   try {
-    const resp = await verifyUser();
+    const resp = await verifyUser('8060176841','999992');
+    console.log('resp', resp)
     res.send(resp);
   } catch (error) {
     throw new Error(error);
