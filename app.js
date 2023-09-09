@@ -38,25 +38,21 @@ const getNigerianBanks = async () => {
   return banks;
 };
 
-let togoBanks
-let togoBanksLength
+let togoBanks;
+let togoBanksLength;
 const getTogoBanks = async () => {
   banks = await getBanks('togo');
   togoBanks = banks;
   togoBanksLength = banks.length;
-
 };
 
-
-let ghanaianBanksLength
-let ghanaianBanks
+let ghanaianBanksLength;
+let ghanaianBanks;
 const getGhanaianBanks = async () => {
   banks = await getBanks('ghana');
   ghanaianBanks = banks;
   ghanaianBanksLength = banks.length;
-
 };
-
 
 const userDetails = {
   currency: 'cedis',
@@ -103,7 +99,7 @@ menu.startState({
 
 menu.state('naira', {
   run: async () => {
-    await getNigerianBanks()
+    await getNigerianBanks();
     userDetails.currency = 'naira';
     const banksToArray = nigerianBanks.slice(
       userDetails.currentIndex,
@@ -113,19 +109,18 @@ menu.state('naira', {
       return `\n${i}. ${x.name}`;
     });
     userDetails.currentIndex += 4;
-    menu.con(`Please select the destination bank \n ${bankArr}`);
+    menu.con(`Please select the destination bank \n ${bankArr}` + '\n99. Next');
   },
   next: {
     // using regex to match user input to next state
-    '*\\d+': `${
-      userDetails.currentIndex < nigerianBanksLength ? 'naira' : 'bank'
-    }`,
+    99: 'naira',
+    '*\\d+': 'bank',
   },
 });
 
 menu.state('cedis', {
   run: async () => {
-    await getGhanaianBanks()
+    await getGhanaianBanks();
     userDetails.currency = 'cedis';
     const banksToArray = ghanaianBanks.slice(
       userDetails.currentIndex,
@@ -135,19 +130,18 @@ menu.state('cedis', {
       return `\n${i}. ${x.name}`;
     });
     userDetails.currentIndex += 4;
-    menu.con(`Please select the destination bank \n ${bankArr}`);
+    menu.con(`Please select the destination bank \n ${bankArr}`  + '\n99. Next');
   },
   next: {
     // using regex to match user input to next state
-    '*\\d+': `${
-      userDetails.currentIndex < ghanaianBanksLength ? 'cedis' : 'bank'
-    }`,
+    99: 'cedis',
+    '*\\d+': 'bank',
   },
 });
 
 menu.state('cefa', {
   run: async () => {
-    await getTogoBanks()
+    await getTogoBanks();
     userDetails.currency = 'cefa';
     const banksToArray = togoBanks.slice(
       userDetails.currentIndex,
@@ -157,11 +151,12 @@ menu.state('cefa', {
       return `\n${i}. ${x.name}`;
     });
     userDetails.currentIndex += 4;
-    menu.con(`Please select the destination bank \n ${bankArr}`);
+    menu.con(`Please select the destination bank \n ${bankArr}`  + '\n99. Next');
   },
   next: {
     // using regex to match user input to next state
-    '*\\d+': `${userDetails.currentIndex < togoBanksLength ? 'cefa' : 'bank'}`,
+    99: 'cefa',
+    '*\\d+': 'bank',
   },
 });
 
@@ -257,7 +252,7 @@ menu.state('processTransaction', {
   run: async () => {
     //process transaction on blockchain
     // await callContract();
-    console.log('yesss')
+    console.log('yesss');
   },
   next: {
     '*\\d+': 'end',
@@ -350,12 +345,11 @@ app.post('/ussd', (req, res) => {
 
 app.get('/contract', async (req, res) => {
   try {
-    const resp = await callContract()
+    const resp = await callContract();
     res.send(resp);
   } catch (error) {
-    throw new Error(error)
+    throw new Error(error);
   }
-
 });
 
 app.get('*', (req, res) => {
