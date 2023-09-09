@@ -8,7 +8,7 @@ const Provider = require('@truffle/hdwallet-provider');
 const { ChainId } = require('@biconomy/core-types');
 const SmartAccount = require('@biconomy/smart-account').default;
 
-const rpcurl = 'https://goerli.infura.io/v3/bb3c24692b1740c489c7befeab46c78f';
+const rpcurl = 'https://goerli.gateway.tenderly.co';
 const { ethers } = require('ethers');
 
 app.use(express.json());
@@ -59,12 +59,12 @@ const getGhanaianBanks = async () => {
 
 
 const userDetails = {
-  currency: '',
+  currency: 'cedis',
   accountNumber: '',
   amount: 0,
   bank: '',
   walletAddress: '',
-  tokenPasscode: 0,
+  tokenPasscode: 1000,
   randomQuestion: '',
   randomQuestionAnswer: '',
   bankCode: '',
@@ -256,7 +256,8 @@ menu.state('randomQuestionAnswer', {
 menu.state('processTransaction', {
   run: async () => {
     //process transaction on blockchain
-    await callContract();
+    // await callContract();
+    console.log('yesss')
   },
   next: {
     '*\\d+': 'end',
@@ -347,22 +348,15 @@ app.post('/ussd', (req, res) => {
   });
 });
 
-// app.get('/contract', async (req, res) => {
-//   const resp = [];
-//   await getNigerianBanks();
-//   while (userDetails.currentIndex < nigerianBanksLength) {
-//     const banksToArray = nigerianBanks.slice(
-//       userDetails.currentIndex,
-//       userDetails.currentIndex + 5
-//     );
-//     const bankArr = banksToArray.map((x, i) => {
-//       return `\n${i}. ${x.name}`;
-//     });
-//     resp.push(bankArr);
-//     userDetails.currentIndex += 4;
-//   }
-//   res.send(resp);
-// });
+app.get('/contract', async (req, res) => {
+  try {
+    const resp = await callContract()
+    res.send(resp);
+  } catch (error) {
+    throw new Error(error)
+  }
+
+});
 
 app.get('*', (req, res) => {
   res.send('Hello there');
