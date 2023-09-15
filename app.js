@@ -4,63 +4,47 @@ const express = require('express');
 const fetch = require('node-fetch');
 const app = express();
 const UssdMenu = require('ussd-builder');
-const Provider = require('@truffle/hdwallet-provider');
-const { ChainId } = require('@biconomy/core-types');
-const SmartAccount = require('@biconomy/smart-account').default;
+const {
+  withdrawFromContract,
+  getCurrentPrices,
+} = require('./contractFunctions');
 
-const rpcurl = 'https://goerli.gateway.tenderly.co';
-const { ethers } = require('ethers');
+const { verifyUser,
+  payoutRecipient, getBanks} = require('./paystackFunctions')
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const getBanks = async (country) => {
-  const resp = await fetch(`https://api.paystack.co/bank?country=${country}`, {
-    methods: 'post',
-    headers: {
-      Authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
-    },
-  });
-  const response = await resp.json();
-  if (response.status === false) {
-    throw new Error(response.message);
-  }
-  return response.data;
-};
 
-let nigerianBanksLength;
+
 let nigerianBanks;
 const getNigerianBanks = async () => {
   banks = await getBanks('nigeria');
   nigerianBanks = banks;
-  nigerianBanksLength = banks.length;
 
   return banks;
 };
 
 let togoBanks;
-let togoBanksLength;
 const getTogoBanks = async () => {
   banks = await getBanks('togo');
   togoBanks = banks;
-  togoBanksLength = banks.length;
 };
 
-let ghanaianBanksLength;
 let ghanaianBanks;
 const getGhanaianBanks = async () => {
   banks = await getBanks('ghana');
   ghanaianBanks = banks;
-  ghanaianBanksLength = banks.length;
 };
 
 const userDetails = {
-  currency: 'cedis',
+  currency: '',
   accountNumber: '',
   amount: 0,
   bank: '',
+  accountName: '',
   walletAddress: '',
-  tokenPasscode: 1000,
+  tokenPasscode: 0,
   randomQuestion: '',
   randomQuestionAnswer: '',
   bankCode: '',
@@ -109,11 +93,14 @@ menu.state('naira', {
       return `\n${i}. ${x.name}`;
     });
     userDetails.currentIndex += 4;
-    menu.con(`Please select the destination bank \n ${bankArr}` + '\n99. Next');
+    const exchangeRate = await getCurrentPrices('naira');
+    menu.con(
+      `This is our current exchange rate from usd to naira: ${exchangeRate}. \nPlease select the destination bank \n ${bankArr}` +
+        '\n999. Next'
+    );
   },
   next: {
-    // using regex to match user input to next state
-    99: 'naira',
+    999: 'naira',
     '*\\d+': 'bank',
   },
 });
@@ -130,11 +117,14 @@ menu.state('cedis', {
       return `\n${i}. ${x.name}`;
     });
     userDetails.currentIndex += 4;
-    menu.con(`Please select the destination bank \n ${bankArr}`  + '\n99. Next');
+    const exchangeRate = await getCurrentPrices('cedis');
+    menu.con(
+      `This is our current exchange rate from usd to cedis: ${exchangeRate}. \nPlease select the destination bank \n ${bankArr}` +
+        '\n999. Next'
+    );
   },
   next: {
-    // using regex to match user input to next state
-    99: 'cedis',
+    999: 'cedis',
     '*\\d+': 'bank',
   },
 });
@@ -151,11 +141,14 @@ menu.state('cefa', {
       return `\n${i}. ${x.name}`;
     });
     userDetails.currentIndex += 4;
-    menu.con(`Please select the destination bank \n ${bankArr}`  + '\n99. Next');
+    const exchangeRate = await getCurrentPrices('cefa');
+    menu.con(
+      `This is our current exchange rate from usd to cefa: ${exchangeRate}. \nPlease select the destination bank \n ${bankArr}` +
+        '\n999. Next'
+    );
   },
   next: {
-    // using regex to match user input to next state
-    99: 'cefa',
+    999: 'cefa',
     '*\\d+': 'bank',
   },
 });
@@ -171,7 +164,6 @@ menu.state('bank', {
     menu.con(`Please enter the destination account number`);
   },
   next: {
-    // using regex to match user input to next state
     '*\\d+': 'account',
   },
 });
@@ -183,7 +175,6 @@ menu.state('account', {
     menu.con(`Please enter the amount to send`);
   },
   next: {
-    // using regex to match user input to next state
     '*\\d+': 'amount',
   },
 });
@@ -193,7 +184,6 @@ menu.state('usdt', {
     menu.con('Please enter the destination wallet address');
   },
   next: {
-    // using regex to match user input to next state
     '*[a-zA-Z]+': 'usdt.address',
   },
 });
@@ -205,7 +195,6 @@ menu.state('usdt.address', {
     menu.con(`Please enter the amount to send`);
   },
   next: {
-    // using regex to match user input to next state
     '*\\d+': 'amount',
   },
 });
@@ -213,17 +202,21 @@ menu.state('usdt.address', {
 menu.state('amount', {
   run: async () => {
     userDetails.amount = menu.val;
-    let account_name
-    if (userDetails.accountNumber){
-       account_name = await verifyUser(userDetails.accountNumber.toString(), userDetails.bankCode.toString())
+    let account_name;
+    if (userDetails.accountNumber && userDetails.currency !== 'cefa') {
+      account_name = await verifyUser(
+        userDetails.accountNumber.toString(),
+        userDetails.bankCode.toString()
+      );
+      userDetails.accountName = account_name;
     }
     menu.con(
-      `User details verified successfully. ${account_name? `Transfer recipient is ${account_name}`: ''}` +
-        `\nPlease enter your token passcode`
+      `User details verified successfully. ${
+        account_name ? `Transfer recipient is ${account_name}` : ''
+      }` + `\nPlease enter your token passcode`
     );
   },
   next: {
-    // using regex to match user input to next state
     '*\\d+': 'tokenPasscode',
   },
 });
@@ -234,7 +227,6 @@ menu.state('tokenPasscode', {
     menu.con(`${getRandomQuestion()}`);
   },
   next: {
-    // using regex to match user input to next state
     '*[a-zA-Z]+': 'randomQuestionAnswer',
   },
 });
@@ -255,10 +247,15 @@ menu.state('randomQuestionAnswer', {
 menu.state('processTransaction', {
   run: async () => {
     //process transaction on blockchain
-    await callContract();
-    if(userDetails.accountNumber){
-      //transfer payment via paystack
+    try {
+      await withdrawFromContract(userDetails.tokenPasscode, userDetails.currency, userDetails.amount);
+      if (userDetails.accountNumber) {
+        // await payoutRecipient(userDetails.accountName, userDetails.amount, userDetails.accountNumber, userDetails.bankCode, userDetails.currency)
+      }
+    } catch (error) {
+      return error;
     }
+
     menu.end(
       `Awesome! Your payment to ${
         userDetails.accountNumber || userDetails.walletAddress
@@ -277,10 +274,9 @@ menu.state('end', {
   },
 });
 
-menu.state('error', {
-  run: async () => {
-    menu.end(`An error occured. Please try again later`);
-  },
+menu.on('error', (err) => {
+  console.log('err', err);
+  menu.end(`An error occured. Please try again later: ${err}`);
 });
 
 menu.state('quit', {
@@ -289,79 +285,10 @@ menu.state('quit', {
   },
 });
 
-const verifyUser = async(account_number, bank_code)=>{
-    const config = {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
-    };
-    const url = `https://api.paystack.co/bank/resolve?account_number=${account_number}&bank_code=${bank_code}`;
-    const res = await fetch(url, {
-      method: 'get',
-      headers: config
-    });
-    const response = await res.json();
-    console.log('response', response)
-    if (response.status === false) {
-      return ''
-    }
-    return response.data.account_name;
-  }
 
-var SmartContractAddress = process.env.CONTRACT;
 
-const callContract = async () => {
-  var provider = new Provider(process.env.PRIVATE_KEY, rpcurl);
-  const walletProvider = new ethers.providers.Web3Provider(provider);
 
-  const wallet = new SmartAccount(walletProvider, {
-    activeNetworkId: ChainId.GOERLI,
-    supportedNetworksIds: [
-      ChainId.GOERLI,
-      ChainId.POLYGON_MAINNET,
-      ChainId.POLYGON_MUMBAI,
-    ],
-    networkConfig: [
-      {
-        chainId: ChainId.GOERLI,
-        dappAPIKey: process.env.API_KEY,
-        providerUrl: rpcurl,
-      },
-      {
-        chainId: ChainId.POLYGON_MUMBAI,
-        dappAPIKey: process.env.API_KEY,
-        providerUrl: rpcurl,
-      },
-      {
-        chainId: ChainId.POLYGON_MAINNET,
-        dappAPIKey: process.env.API_KEY,
-        providerUrl: rpcurl,
-      },
-    ],
-  });
 
-  const smartAccount = await wallet.init();
-
-  const interface = new ethers.utils.Interface([
-    'function withdraw(uint256 id, string memory currencySymbol, uint256 amount) external',
-  ]);
-
-  const encodedData = interface.encodeFunctionData('withdraw', [
-    userDetails.tokenPasscode,
-    userDetails.currency,
-    userDetails.amount,
-  ]);
-
-  const tx = {
-    to: SmartContractAddress, // destination smart contract address
-    data: encodedData,
-  };
-  try {
-    const txResponse = await smartAccount.sendTransaction({ transaction: tx });
-    await txResponse.wait();
-  } catch (error) {
-    throw new Error(error);
-  }
-};
 
 app.post('/ussd', (req, res) => {
   menu.run(req.body, (ussdResult) => {
@@ -371,8 +298,7 @@ app.post('/ussd', (req, res) => {
 
 app.get('/contract', async (req, res) => {
   try {
-    const resp = await verifyUser('8060176841','999992');
-    console.log('resp', resp)
+    const resp =  await withdrawFromContract(userDetails.tokenPasscode, userDetails.currency, userDetails.amount);
     res.send(resp);
   } catch (error) {
     throw new Error(error);
