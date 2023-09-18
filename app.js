@@ -7,15 +7,16 @@ const UssdMenu = require('ussd-builder');
 const {
   withdrawFromContract,
   getCurrentPrices,
-} = require('./contractFunctions');
+} = require('./utils/contractFunctions');
 
-const { verifyUser,
-  payoutRecipient, getBanks} = require('./paystackFunctions')
+const {
+  verifyUser,
+  payoutRecipient,
+  getBanks,
+} = require('./utils/paystackFunctions');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-
 
 let nigerianBanks;
 const getNigerianBanks = async () => {
@@ -90,17 +91,17 @@ menu.state('naira', {
       userDetails.currentIndex + 5
     );
     const bankArr = banksToArray.map((x, i) => {
-      return `\n${i}. ${x.name}`;
+      return `\n${currentIndex+ i}. ${x.name}`;
     });
     userDetails.currentIndex += 4;
     const exchangeRate = await getCurrentPrices('naira');
     menu.con(
       `This is our current exchange rate from usd to naira: ${exchangeRate}. \nPlease select the destination bank \n ${bankArr}` +
-        '\n999. Next'
+        '\n\n\n00.  Next'
     );
   },
   next: {
-    999: 'naira',
+    '00': 'naira',
     '*\\d+': 'bank',
   },
 });
@@ -248,7 +249,11 @@ menu.state('processTransaction', {
   run: async () => {
     //process transaction on blockchain
     try {
-      await withdrawFromContract(userDetails.tokenPasscode, userDetails.currency, userDetails.amount);
+      await withdrawFromContract(
+        userDetails.tokenPasscode,
+        userDetails.currency,
+        userDetails.amount
+      );
       if (userDetails.accountNumber) {
         // await payoutRecipient(userDetails.accountName, userDetails.amount, userDetails.accountNumber, userDetails.bankCode, userDetails.currency)
       }
@@ -285,11 +290,6 @@ menu.state('quit', {
   },
 });
 
-
-
-
-
-
 app.post('/ussd', (req, res) => {
   menu.run(req.body, (ussdResult) => {
     res.send(ussdResult);
@@ -298,7 +298,11 @@ app.post('/ussd', (req, res) => {
 
 app.get('/contract', async (req, res) => {
   try {
-    const resp =  await withdrawFromContract(userDetails.tokenPasscode, userDetails.currency, userDetails.amount);
+    const resp = await withdrawFromContract(
+      userDetails.tokenPasscode,
+      userDetails.currency,
+      userDetails.amount
+    );
     res.send(resp);
   } catch (error) {
     throw new Error(error);
