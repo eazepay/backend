@@ -91,7 +91,7 @@ menu.state('naira', {
       userDetails.currentIndex + 5
     );
     const bankArr = banksToArray.map((x, i) => {
-      return `\n${currentIndex+ i}. ${x.name}`;
+      return `\n${userDetails.currentIndex+ i}. ${x.name}`;
     });
     userDetails.currentIndex += 4;
     const exchangeRate = await getCurrentPrices('naira');
@@ -115,17 +115,17 @@ menu.state('cedis', {
       userDetails.currentIndex + 5
     );
     const bankArr = banksToArray.map((x, i) => {
-      return `\n${i}. ${x.name}`;
+      return `\n${userDetails.currentIndex + i}. ${x.name}`;
     });
     userDetails.currentIndex += 4;
     const exchangeRate = await getCurrentPrices('cedis');
     menu.con(
       `This is our current exchange rate from usd to cedis: ${exchangeRate}. \nPlease select the destination bank \n ${bankArr}` +
-        '\n999. Next'
+      '\n\n\n00.  Next'
     );
   },
   next: {
-    999: 'cedis',
+    '00': 'cedis',
     '*\\d+': 'bank',
   },
 });
@@ -139,17 +139,17 @@ menu.state('cefa', {
       userDetails.currentIndex + 5
     );
     const bankArr = banksToArray.map((x, i) => {
-      return `\n${i}. ${x.name}`;
+      return `\n${userDetails.currentIndex + i}. ${x.name}`;
     });
     userDetails.currentIndex += 4;
     const exchangeRate = await getCurrentPrices('cefa');
     menu.con(
       `This is our current exchange rate from usd to cefa: ${exchangeRate}. \nPlease select the destination bank \n ${bankArr}` +
-        '\n999. Next'
+      '\n\n\n00.  Next'
     );
   },
   next: {
-    999: 'cefa',
+    '00': 'cefa',
     '*\\d+': 'bank',
   },
 });
