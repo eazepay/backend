@@ -93,15 +93,17 @@ menu.state('naira', {
     const bankArr = banksToArray.map((x, i) => {
       return `\n${userDetails.currentIndex+ i}. ${x.name}`;
     });
-    userDetails.currentIndex += 4;
+    userDetails.currentIndex += 5;
     const exchangeRate = await getCurrentPrices('naira');
     menu.con(
       `This is our current exchange rate from usd to naira: ${exchangeRate}. \nPlease select the destination bank \n ${bankArr}` +
-        '\n\n\n00.  Next'
+        '\n\n\n00.  Back'+
+        '\n000. Next'
     );
   },
   next: {
-    '00': 'naira',
+    '00': 'back',
+    '000': 'naira',
     '*\\d+': 'bank',
   },
 });
@@ -247,16 +249,15 @@ menu.state('randomQuestionAnswer', {
 
 menu.state('processTransaction', {
   run: async () => {
-    //process transaction on blockchain
     try {
-      await withdrawFromContract(
-        userDetails.tokenPasscode,
-        userDetails.currency,
-        userDetails.amount
-      );
-      if (userDetails.accountNumber) {
-        // await payoutRecipient(userDetails.accountName, userDetails.amount, userDetails.accountNumber, userDetails.bankCode, userDetails.currency)
-      }
+      // await withdrawFromContract(
+      //   userDetails.tokenPasscode,
+      //   userDetails.currency,
+      //   userDetails.amount
+      // );
+      // if (userDetails.accountNumber) {
+      //   await payoutRecipient(userDetails.accountName, userDetails.amount, userDetails.accountNumber, userDetails.bankCode, userDetails.currency)
+      // }
     } catch (error) {
       return error;
     }
@@ -323,3 +324,30 @@ const start = async () => {
   }
 };
 start();
+
+
+
+menu.state('currency', {
+  run: async () => {
+    const currency = menu.val == 1 ? 'naira' : menu.val == 2? 'cedis' : 'cefa' 
+    const banks = await getBanks(currency);
+    userDetails.currency = 'cedis';
+    const banksToArray = banks.slice(
+      userDetails.currentIndex,
+      userDetails.currentIndex + 5
+    );
+    const bankArr = banksToArray.map((x, i) => {
+      return `\n${userDetails.currentIndex + i}. ${x.name}`;
+    });
+    userDetails.currentIndex += 4;
+    const exchangeRate = await getCurrentPrices('cedis');
+    menu.con(
+      `This is our current exchange rate from usd to cedis: ${exchangeRate}. \nPlease select the destination bank \n ${bankArr}` +
+      '\n\n\n00.  Next'
+    );
+  },
+  next: {
+    '00': 'cedis',
+    '*\\d+': 'bank',
+  },
+});
