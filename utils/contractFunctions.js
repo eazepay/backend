@@ -52,8 +52,7 @@ const withdrawFromContract = async (tokenPasscode, currency, amount) => {
     data: encodedData,
   };
   try {
-    const txResponse = await smartAccount.sendTransaction({ transaction: tx });
-    await txResponse.wait();
+    await smartAccount.sendTransaction({ transaction: tx });
   } catch (error) {
     throw new Error(error);
   }
