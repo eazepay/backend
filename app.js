@@ -250,11 +250,11 @@ menu.state('randomQuestionAnswer', {
 menu.state('processTransaction', {
   run: async () => {
     try {
-      // await withdrawFromContract(
-      //   userDetails.tokenPasscode,
-      //   userDetails.currency,
-      //   userDetails.amount
-      // );
+      await withdrawFromContract(
+        userDetails.tokenPasscode,
+        userDetails.currency,
+        userDetails.amount
+      );
       // if (userDetails.accountNumber) {
       //   await payoutRecipient(userDetails.accountName, userDetails.amount, userDetails.accountNumber, userDetails.bankCode, userDetails.currency)
       // }
